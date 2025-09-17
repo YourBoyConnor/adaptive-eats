@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdaptiveEats - AI Recipe Adaptation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        textarea, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        select[multiple] {
+            min-height: 120px;
+        }
+        
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            min-height: 60px;
+            background: #f8f9fa;
+        }
+        
+        .allergy-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: 2px solid #c82333;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .allergy-tag:hover {
+            background: #c82333;
+            border-color: #bd2130;
+            transform: translateY(-1px);
+        }
+        
+        .allergy-remove {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 1;
+        }
+        
+        .allergy-remove:hover {
+            color: #ffc107;
+        }
+        
+        .allergy-input {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            padding: 4px 8px;
+            min-width: 120px;
+            flex: 1;
+        }
+        
+        .restriction-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .restriction-button {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #e9ecef;
+            color: #495057;
+            border: 2px solid #dee2e6;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+            user-select: none;
+        }
+        
+        .restriction-button:hover {
+            background: #dee2e6;
+            border-color: #adb5bd;
+            transform: translateY(-1px);
+        }
+        
+        .restriction-button.selected {
+            background: #dc3545;
+            color: white;
+            border-color: #c82333;
+        }
+        
+        .restriction-button.selected:hover {
+            background: #c82333;
+            border-color: #bd2130;
+        }
+        
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 5px solid #28a745;
+        }
+        
+        .result h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        
+        .recipe-section {
+            margin-bottom: 20px;
+        }
+        
+        .recipe-section h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .recipe-text {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        
+        .substitutions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .substitutions ul {
+            margin: 4px 0 0 0;
+            padding-left: 24px;
+        }
+        
+        .substitutions li {
+            margin: 6px 0;
+        }
+
+        /* Improve list spacing for ingredients/instructions */
+        .recipe-text ul, .recipe-text ol {
+            margin: 6px 0 10px 0;
+            padding-left: 24px;
+        }
+        .recipe-text li {
+            margin: 6px 0;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 5px solid #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ AdaptiveEats</h1>
+            <p>Transform any recipe to fit your dietary needs with AI</p>
+        </div>
+        
+        <div class="content">
+            <form id="recipeForm">
+                <div class="form-group">
+                    <label for="recipe">Paste your recipe here:</label>
+                    <textarea 
+                        id="recipe" 
+                        name="recipe" 
+                        placeholder="Enter your recipe ingredients and instructions... (optional if uploading image)"
+                    ></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="imageFile">Or upload a food image:</label>
+                    <input type="file" id="imageFile" name="imageFile" accept="image/*" />
+                    <small style="display:block;color:#666;margin-top:6px;">If an image is selected, the app will recognize the dish and generate a suitable recipe.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Select dietary restrictions (optional):</label>
+                    <div id="restrictionButtons" class="restriction-container">
+                        {% for option in dietary_options %}
+                        <span class="restriction-button" data-restriction="{{ option }}">{{ option.title() }}</span>
+                        {% endfor %}
+                    </div>
+                    <small style="display:block;color:#666;margin-top:6px;">Click buttons to select/deselect dietary restrictions</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Add your allergies (optional):</label>
+                    <div id="allergyTags" class="tag-container">
+                        <input type="text" id="allergyInput" class="allergy-input" placeholder="Type an allergy and press Enter...">
+                    </div>
+                    <small style="display:block;color:#666;margin-top:6px;">Type an allergy and press Enter to add it. Click the × to remove.</small>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    Adapt Recipe
+                </button>
+            </form>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Adapting your recipe with AI...</p>
+            </div>
+            
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('recipeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const recipe = document.getElementById('recipe').value;
+            const dietaryRestrictions = Array.from(document.querySelectorAll('.restriction-button.selected')).map(button => button.dataset.restriction);
+            const allergies = Array.from(document.querySelectorAll('.allergy-tag')).map(tag => tag.textContent.replace('×', '').trim()).filter(allergy => allergy);
+            const imageInput = document.getElementById('imageFile');
+            const imageFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            if (!recipe.trim() && !imageFile) {
+                alert('Please enter a recipe or choose an image.');
+                return;
+            }
+            if (dietaryRestrictions.length === 0 && allergies.length === 0) {
+                if (!confirm('No dietary restrictions or allergies selected. Continue with no adaptations?')) {
+                    return;
+                }
+            }
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            result.innerHTML = '';
+            
+            try {
+                let response;
+                if (imageFile) {
+                    const formData = new FormData();
+                    formData.append('file', imageFile);
+                    dietaryRestrictions.forEach(restriction => {
+                        formData.append('dietary_restrictions', restriction);
+                    });
+                    allergies.forEach(allergy => {
+                        formData.append('allergies', allergy);
+                    });
+                    response = await fetch('/adapt-from-image', {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    response = await fetch('/adapt-recipe', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            recipe_text: recipe,
+                            dietary_restrictions: dietaryRestrictions,
+                            allergies: allergies
+                        })
+                    });
+                }
+                
+                if (!response.ok) {
+                    throw new Error('Failed to adapt recipe');
+                }
+                
+                const data = await response.json();
+                
+                // Display results
+                const restrictionsText = data.dietary_restrictions.length > 0 ? data.dietary_restrictions.join(', ') : 'none';
+                const allergiesText = data.allergies.length > 0 ? data.allergies.join(', ') : 'none';
+                result.innerHTML = `
+                    <div class="result">
+                        <h3>✅ Recipe Adapted</h3>
+                        <p><strong>Dietary Restrictions:</strong> ${restrictionsText}</p>
+                        <p><strong>Allergies:</strong> ${allergiesText}</p>
+                        
+                        <div class="recipe-section">
+                            <h4>Adapted Recipe:</h4>
+                            <div class="recipe-text" id="adaptedText"></div>
+                        </div>
+                        
+                        ${data.substitutions_made.length > 0 ? `
+                            <div class="substitutions">
+                                <h4>🔄 Substitutions Made:</h4>
+                                <ul>
+                                    ${data.substitutions_made.map(sub => `<li>${sub}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+
+                        ${data.nutrition_facts && data.nutrition_facts.length > 0 ? `
+                            <div class="substitutions" style="background:#fff3cd;border-left-color:#ffca2c;">
+                                <h4>🍎 Nutrition (per serving)</h4>
+                                <ul>
+                                    ${data.nutrition_facts.map(n => `<li>${n}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                // Nicely format the adapted recipe text as HTML
+                const adaptedEl = document.getElementById('adaptedText');
+                adaptedEl.innerHTML = formatRecipeText(data.adapted_recipe);
+                
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error</h4>
+                        <p>Failed to adapt recipe: ${error.message}</p>
+                        <p>Make sure you have set your OPENAI_API_KEY environment variable.</p>
+                    </div>
+                `;
+            } finally {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        // Handle restriction button clicks
+        document.querySelectorAll('.restriction-button').forEach(button => {
+            button.addEventListener('click', function() {
+                this.classList.toggle('selected');
+            });
+        });
+
+        // Handle allergy input
+        const allergyInput = document.getElementById('allergyInput');
+        const allergyContainer = document.getElementById('allergyTags');
+        
+        function addAllergyTag(allergy) {
+            if (!allergy.trim()) return;
+            
+            const tag = document.createElement('span');
+            tag.className = 'allergy-tag';
+            tag.innerHTML = `${allergy.trim()} <span class="allergy-remove">×</span>`;
+            
+            // Add remove functionality
+            tag.querySelector('.allergy-remove').addEventListener('click', function(e) {
+                e.stopPropagation();
+                tag.remove();
+            });
+            
+            // Insert before the input
+            allergyContainer.insertBefore(tag, allergyInput);
+            allergyInput.value = '';
+        }
+        
+        allergyInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addAllergyTag(this.value);
+            }
+        });
+        
+        allergyInput.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                addAllergyTag(this.value);
+            }
+        });
+
+        function formatRecipeText(text) {
+            // Escape HTML
+            const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const lines = text.split(/\r?\n/);
+            let html = '';
+            let mode = '';
+            let listOpen = false;
+
+            const closeList = () => {
+                if (listOpen) {
+                    html += mode === 'ol' ? '</ol>' : '</ul>';
+                    listOpen = false;
+                }
+            };
+
+            for (const raw of lines) {
+                const line = raw.trim();
+                if (!line) { html += '<br />'; continue; }
+
+                if (line.toLowerCase().startsWith('title:')) {
+                    closeList();
+                    html += `<h4>${esc(line.slice(6).trim())}</h4>`;
+                    continue;
+                }
+                if (/^ingredients:?$/i.test(line)) {
+                    closeList();
+                    mode = 'ul';
+                    html += '<h5>Ingredients</h5><ul>';
+                    listOpen = true;
+                    continue;
+                }
+                if (/^instructions:?$/i.test(line)) {
+                    closeList();
+                    mode = 'ol';
+                    html += '<h5>Instructions</h5><ol>';
+                    listOpen = true;
+                    continue;
+                }
+                if (/^notes?\s*\(optional\)?:?$/i.test(line)) {
+                    closeList();
+                    mode = 'ul';
+                    html += '<h5>Notes</h5><ul>';
+                    listOpen = true;
+                    continue;
+                }
+
+                // Bullets
+                if (/^[-\u2022\*]\s+/.test(line)) {
+                    if (!listOpen) { html += '<ul>'; listOpen = true; mode = 'ul'; }
+                    html += `<li>${esc(line.replace(/^[-\u2022\*]\s+/, ''))}</li>`;
+                    continue;
+                }
+                // Numbered
+                if (/^\d+\.\s+/.test(line)) {
+                    if (!listOpen || mode !== 'ol') { closeList(); html += '<ol>'; listOpen = true; mode = 'ol'; }
+                    html += `<li>${esc(line.replace(/^\d+\.\s+/, ''))}</li>`;
+                    continue;
+                }
+
+                // Default paragraph
+                closeList();
+                html += `<p>${esc(line)}</p>`;
+            }
+            closeList();
+            return html;
+        }
+    </script>
+</body>
+</html>
