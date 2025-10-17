@@ -67,39 +67,47 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to upload images!');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to upload images!');
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
 
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Gallery Error', 'Unable to access photo library. Please try again.');
     }
   };
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Sorry, we need camera permissions to take photos!');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Sorry, we need camera permissions to take photos!');
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
 
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Camera Error', 'Unable to access camera. Please try again.');
     }
   };
 
