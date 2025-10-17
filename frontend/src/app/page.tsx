@@ -401,6 +401,29 @@ export default function Home() {
           </AnimatePresence>
         </motion.div>
       </main>
+
+      {/* Footer */}
+      <motion.footer
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="text-center py-8"
+      >
+        <p className="text-white/50 text-sm mb-2">
+          Powered by AI • Transform any recipe to fit your dietary needs
+        </p>
+        <p className="text-white/40 text-xs">
+          Made by{' '}
+          <a 
+            href="https://connorpymm.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-white/60 hover:text-white/80 transition-colors underline decoration-white/30 hover:decoration-white/50"
+          >
+            Connor Pymm
+          </a>
+        </p>
+      </motion.footer>
     </div>
   );
 }

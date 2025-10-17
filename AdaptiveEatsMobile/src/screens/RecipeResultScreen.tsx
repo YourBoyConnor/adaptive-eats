@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Share,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -90,6 +91,24 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
             >
               <Text style={styles.newRecipeButtonText}>Adapt Another Recipe</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Powered by AI • Transform any recipe to fit your dietary needs
+            </Text>
+            <Text style={styles.creditText}>
+              Made by{' '}
+              <Text 
+                style={styles.creditLink}
+                onPress={() => {
+                  Linking.openURL('https://connorpymm.com');
+                }}
+              >
+                Connor Pymm
+              </Text>
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -177,5 +196,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  footer: {
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+  },
+  footerText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  creditText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  creditLink: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    textDecorationLine: 'underline',
   },
 });

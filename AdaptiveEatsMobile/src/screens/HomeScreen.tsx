@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -283,6 +284,24 @@ export default function HomeScreen({ navigation }: Props) {
               <Text style={styles.submitButtonText}>🍞 Adapt Recipe</Text>
             )}
           </TouchableOpacity>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Powered by AI • Transform any recipe to fit your dietary needs
+            </Text>
+            <Text style={styles.creditText}>
+              Made by{' '}
+              <Text 
+                style={styles.creditLink}
+                onPress={() => {
+                  Linking.openURL('https://connorpymm.com');
+                }}
+              >
+                Connor Pymm
+              </Text>
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </LinearGradient>
@@ -433,5 +452,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  footer: {
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+  },
+  footerText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  creditText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  creditLink: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    textDecorationLine: 'underline',
   },
 });
