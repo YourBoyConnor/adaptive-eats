@@ -29,14 +29,105 @@ export default function Home() {
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
   const [allergies, setAllergies] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<RecipeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
 
   const dietaryOptions = [
     'vegan', 'vegetarian', 'gluten-free', 'keto', 'paleo', 
     'dairy-free', 'nut-free', 'low-sodium', 'diabetic-friendly'
   ];
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const captureFromCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment', // Use back camera if available
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
+      
+      setShowCamera(true);
+      
+      // Create a video element to show camera feed
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+      
+      // Add video to a temporary container
+      const container = document.getElementById('camera-container');
+      if (container) {
+        container.innerHTML = '';
+        container.appendChild(video);
+        
+        // Add capture button
+        const captureBtn = document.createElement('button');
+        captureBtn.textContent = 'Capture Photo';
+        captureBtn.className = 'mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors';
+        captureBtn.onclick = () => capturePhoto(video, stream);
+        container.appendChild(captureBtn);
+        
+        // Add cancel button
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.className = 'mt-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors ml-2';
+        cancelBtn.onclick = () => {
+          stream.getTracks().forEach(track => track.stop());
+          setShowCamera(false);
+          container.innerHTML = '';
+        };
+        container.appendChild(cancelBtn);
+      }
+    } catch (error) {
+      alert('Camera access denied or not available. Please use file upload instead.');
+    }
+  };
+
+  const capturePhoto = (video: HTMLVideoElement, stream: MediaStream) => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    if (context) {
+      context.drawImage(video, 0, 0);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+          setImageFile(file);
+          setImagePreview(URL.createObjectURL(blob));
+        }
+      }, 'image/jpeg', 0.8);
+    }
+    
+    // Stop camera stream
+    stream.getTracks().forEach(track => track.stop());
+    setShowCamera(false);
+    
+    // Clear camera container
+    const container = document.getElementById('camera-container');
+    if (container) {
+      container.innerHTML = '';
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,23 +247,64 @@ export default function Home() {
                 <CameraIcon className="w-5 h-5" />
                 <span>Or upload a food image</span>
               </label>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <div className="border-2 border-dashed border-white/30 rounded-xl p-8 text-center hover:border-white/50 transition-colors">
-                  <CameraIcon className="w-12 h-12 text-white/50 mx-auto mb-4" />
-                  <p className="text-white/70">
-                    {imageFile ? imageFile.name : 'Click to upload an image'}
-                  </p>
-                  <p className="text-sm text-white/50 mt-2">
-                    If an image is selected, the app will recognize the dish and generate a suitable recipe.
-                  </p>
+              
+              {/* Image Preview */}
+              {imagePreview && (
+                <div className="relative">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-full h-64 object-cover rounded-xl border border-white/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
                 </div>
-              </div>
+              )}
+
+              {/* Camera Container */}
+              {showCamera && (
+                <div id="camera-container" className="border-2 border-white/30 rounded-xl p-4 bg-black/20">
+                  {/* Camera feed will be inserted here */}
+                </div>
+              )}
+
+              {/* Upload Options */}
+              {!imagePreview && !showCamera && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* File Upload */}
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="border-2 border-dashed border-white/30 rounded-xl p-6 text-center hover:border-white/50 transition-colors h-32 flex flex-col items-center justify-center">
+                      <DocumentTextIcon className="w-8 h-8 text-white/50 mb-2" />
+                      <p className="text-white/70 text-sm">Choose from files</p>
+                    </div>
+                  </div>
+
+                  {/* Camera Capture */}
+                  <button
+                    type="button"
+                    onClick={captureFromCamera}
+                    className="border-2 border-dashed border-white/30 rounded-xl p-6 text-center hover:border-white/50 transition-colors h-32 flex flex-col items-center justify-center"
+                  >
+                    <CameraIcon className="w-8 h-8 text-white/50 mb-2" />
+                    <p className="text-white/70 text-sm">Take a photo</p>
+                  </button>
+                </div>
+              )}
+
+              <p className="text-sm text-white/50 text-center">
+                If an image is selected, the app will recognize the dish and generate a suitable recipe.
+              </p>
             </div>
 
             {/* Dietary Restrictions */}

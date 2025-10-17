@@ -6,7 +6,9 @@ AI-powered recipe adaptation for dietary restrictions. Transform any recipe to f
 
 - **Smart Recipe Adaptation**: Convert recipes for 9+ dietary restrictions
 - **AI-Powered Substitutions**: Intelligent ingredient replacements
-- **Clean Web Interface**: Simple, intuitive user experience
+- **Camera Integration**: Take photos or upload images for recipe recognition
+- **Cross-Platform**: Web app + Mobile app (iOS & Android)
+- **Clean Interface**: Modern, Discord-like UI design
 - **Real-time Processing**: Get adapted recipes instantly
 
 ## Supported Dietary Restrictions
