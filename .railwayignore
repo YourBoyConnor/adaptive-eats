@@ -1,0 +1,12 @@
+# Ignore frontend directory for Railway backend deployment
+frontend/
+node_modules/
+.git/
+.gitignore
+README.md
+MOBILE_APP_GUIDE.md
+DEPLOYMENT_GUIDE.md
+DEPLOYMENT_CHECKLIST.md
+QUICK_DEPLOY.md
+update-cors.js
+deploy.sh

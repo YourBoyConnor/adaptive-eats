@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "concurrently \"python main.py\" \"cd frontend && npm run dev\"",
     "dev:backend": "python main.py",
-    "dev:frontend": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "start": "cd frontend && npm start"
+    "dev:frontend": "cd frontend && npm run dev"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
