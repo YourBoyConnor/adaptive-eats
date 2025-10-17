@@ -1,5 +1,5 @@
-
-<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with gradient -->
   <defs>
     <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
@@ -8,14 +8,14 @@
   </defs>
   
   <!-- Background circle -->
-  <circle cx="96" cy="96" r="76" fill="url(#bgGradient)"/>
+  <circle cx="512" cy="512" r="480" fill="url(#bgGradient)"/>
   
-  <!-- Bread loaf (scaled and positioned) -->
-  <g transform="translate(96, 96) scale(4.8, 4.8)">
-    <path d="M8 15C8 12.7909 9.79086 11 12 11H28C30.2091 11 32 12.7909 32 15V25C32 27.2091 30.2091 29 28 29H12C9.79086 29 8 27.2091 8 25V15Z" fill="#F4A261" stroke="#D08B3A" stroke-width="1.5"/>
+  <!-- Bread loaf (scaled up) -->
+  <g transform="translate(512, 512) scale(20, 20)">
+    <path d="M8 15C8 12.7909 9.79086 11 12 11H28C30.2091 11 32 12.7909 32 15V25C32 27.2091 30.2091 29 28 29H12C9.79086 29 8 27.2091 8 25V15Z" fill="#F4A261" stroke="#D08B3A" stroke-width="0.075"/>
     
     <!-- Bread texture lines -->
-    <path d="M10 17H30M10 19H30M10 21H30M10 23H30" stroke="#D08B3A" stroke-width="0.8" opacity="0.6"/>
+    <path d="M10 17H30M10 19H30M10 21H30M10 23H30" stroke="#D08B3A" stroke-width="0.04" opacity="0.6"/>
     
     <!-- Top crust -->
     <path d="M10 15C10 13.8954 10.8954 13 12 13H28C29.1046 13 30 13.8954 30 15V17H10V15Z" fill="#E76F51"/>

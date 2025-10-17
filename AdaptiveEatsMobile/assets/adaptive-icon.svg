@@ -1,0 +1,37 @@
+
+    <svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      
+      <!-- Background circle -->
+      <circle cx="256" cy="256" r="236" fill="url(#bg)"/>
+      
+      <!-- Bread loaf -->
+      <rect x="153.6" y="179.2" width="204.8" height="153.6" rx="25.6" fill="#F4A261" stroke="#D08B3A" stroke-width="5.12"/>
+      
+      <!-- Top crust -->
+      <rect x="153.6" y="179.2" width="204.8" height="25.6" rx="10.24" fill="#E76F51"/>
+      
+      <!-- Bread texture lines -->
+      <line x1="179.2" y1="215.04" x2="332.8" y2="215.04" stroke="#D08B3A" stroke-width="1.536" opacity="0.6"/>
+      <line x1="179.2" y1="230.4" x2="332.8" y2="230.4" stroke="#D08B3A" stroke-width="1.536" opacity="0.6"/>
+      <line x1="179.2" y1="245.76" x2="332.8" y2="245.76" stroke="#D08B3A" stroke-width="1.536" opacity="0.6"/>
+      <line x1="179.2" y1="261.12" x2="332.8" y2="261.12" stroke="#D08B3A" stroke-width="1.536" opacity="0.6"/>
+      
+      <!-- Sparkles -->
+      <polygon points="384,128 409.6,76.8 435.2,128 460.8,153.6 435.2,179.2 409.6,204.8 384,179.2 358.4,153.6" fill="#FFD700"/>
+      <polygon points="128,384 153.6,332.8 179.2,384 204.8,409.6 179.2,435.2 153.6,460.8 128,435.2 102.4,409.6" fill="#FFD700"/>
+      <polygon points="102.4,102.4 128,51.2 153.6,102.4 179.2,128 153.6,153.6 128,179.2 102.4,153.6 76.8,128" fill="#FFD700"/>
+      <polygon points="409.6,409.6 435.2,358.4 460.8,409.6 486.4,435.2 460.8,460.8 435.2,486.4 409.6,460.8 384,435.2" fill="#FFD700"/>
+      
+      <!-- Small sparkles -->
+      <circle cx="435.2" cy="256" r="10.24" fill="#FFD700"/>
+      <circle cx="76.8" cy="256" r="10.24" fill="#FFD700"/>
+      <circle cx="256" cy="76.8" r="7.68" fill="#FFD700"/>
+      <circle cx="256" cy="435.2" r="7.68" fill="#FFD700"/>
+    </svg>
+  

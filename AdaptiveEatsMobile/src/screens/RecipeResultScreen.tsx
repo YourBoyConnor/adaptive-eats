@@ -13,11 +13,41 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RecipeResponse } from '../types';
+import { SvgXml } from 'react-native-svg';
 
 type RootStackParamList = {
   Home: undefined;
   RecipeResult: { result: RecipeResponse };
 };
+
+const breadLogoSvg = `<svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bread loaf -->
+  <path d="M8 15C8 12.7909 9.79086 11 12 11H28C30.2091 11 32 12.7909 32 15V25C32 27.2091 30.2091 29 28 29H12C9.79086 29 8 27.2091 8 25V15Z" fill="#F4A261" stroke="#D08B3A" stroke-width="1.5"/>
+  
+  <!-- Bread texture lines -->
+  <path d="M10 17H30M10 19H30M10 21H30M10 23H30" stroke="#D08B3A" stroke-width="0.8" opacity="0.6"/>
+  
+  <!-- Top crust -->
+  <path d="M10 15C10 13.8954 10.8954 13 12 13H28C29.1046 13 30 13.8954 30 15V17H10V15Z" fill="#E76F51"/>
+  
+  <!-- Sparkle 1 (top right) -->
+  <path d="M32 8L34 4L36 8L40 10L36 12L34 16L32 12L28 10L32 8Z" fill="#FFD700"/>
+  
+  <!-- Sparkle 2 (bottom left) -->
+  <path d="M4 28L6 24L8 28L12 30L8 32L6 36L4 32L0 30L4 28Z" fill="#FFD700"/>
+  
+  <!-- Sparkle 3 (top left) -->
+  <path d="M6 6L8 2L10 6L14 8L10 10L8 14L6 10L2 8L6 6Z" fill="#FFD700"/>
+  
+  <!-- Sparkle 4 (bottom right) -->
+  <path d="M30 32L32 28L34 32L38 34L34 36L32 40L30 36L26 34L30 32Z" fill="#FFD700"/>
+  
+  <!-- Small sparkles -->
+  <circle cx="35" cy="20" r="1.5" fill="#FFD700"/>
+  <circle cx="5" cy="20" r="1.5" fill="#FFD700"/>
+  <circle cx="20" cy="5" r="1" fill="#FFD700"/>
+  <circle cx="20" cy="35" r="1" fill="#FFD700"/>
+</svg>`;
 
 type RecipeResultScreenNavigationProp = StackNavigationProp<RootStackParamList, 'RecipeResult'>;
 type RecipeResultScreenRouteProp = RouteProp<RootStackParamList, 'RecipeResult'>;
@@ -173,7 +203,7 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
                   navigation.navigate('Home');
                 }}
               >
-                <Text style={styles.newRecipeButtonText}>🍞 Adapt Another</Text>
+                <Text style={styles.newRecipeButtonText}>Adapt Another</Text>
               </TouchableOpacity>
             </Animated.View>
           </View>
@@ -182,6 +212,10 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
 
       {/* Fixed Footer */}
       <View style={styles.footer}>
+        <View style={styles.footerLogo}>
+          <SvgXml xml={breadLogoSvg} width={24} height={24} />
+          <Text style={styles.footerBrand}>AdaptiveEats</Text>
+        </View>
         <Text style={styles.footerText}>
           Powered by AI • Transform any recipe to fit your dietary needs
         </Text>
@@ -327,6 +361,17 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
+  },
+  footerLogo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  footerBrand: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
   footerText: {
     color: 'rgba(255, 255, 255, 0.6)',
