@@ -3,12 +3,31 @@ from fastapi import UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import warnings
 import openai
 import os
 from typing import List, Optional
 
+# Suppress the Pydantic V1 compatibility warning
+warnings.filterwarnings("ignore", message="Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.")
+
 app = FastAPI(title="AdaptiveEats", description="AI-powered recipe adaptation for dietary restrictions")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000",
+        "https://adaptive-eats.vercel.app",  # Production frontend URL
+        "https://*.vercel.app",  # Vercel preview URLs
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Templates
 templates = Jinja2Templates(directory="templates")
@@ -346,4 +365,5 @@ async def adapt_from_image(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

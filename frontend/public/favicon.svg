@@ -1,0 +1,22 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bread loaf -->
+  <path d="M6 12C6 10.3431 7.34315 9 9 9H23C24.6569 9 26 10.3431 26 12V20C26 21.6569 24.6569 23 23 23H9C7.34315 23 6 21.6569 6 20V12Z" fill="#F4A261" stroke="#D08B3A" stroke-width="1.2"/>
+  
+  <!-- Bread texture lines -->
+  <path d="M8 14H24M8 16H24M8 18H24" stroke="#D08B3A" stroke-width="0.6" opacity="0.6"/>
+  
+  <!-- Top crust -->
+  <path d="M8 12C8 11.4477 8.44772 11 9 11H23C23.5523 11 24 11.4477 24 12V14H8V12Z" fill="#E76F51"/>
+  
+  <!-- Sparkle 1 (top right) -->
+  <path d="M26 6L28 2L30 6L34 8L30 10L28 14L26 10L22 8L26 6Z" fill="#FFD700"/>
+  
+  <!-- Sparkle 2 (bottom left) -->
+  <path d="M2 22L4 18L6 22L10 24L6 26L4 30L2 26L-2 24L2 22Z" fill="#FFD700"/>
+  
+  <!-- Small sparkles -->
+  <circle cx="28" cy="16" r="1.2" fill="#FFD700"/>
+  <circle cx="4" cy="16" r="1.2" fill="#FFD700"/>
+  <circle cx="16" cy="4" r="0.8" fill="#FFD700"/>
+  <circle cx="16" cy="28" r="0.8" fill="#FFD700"/>
+</svg>
