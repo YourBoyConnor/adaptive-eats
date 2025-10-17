@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Image,
   ActivityIndicator,
   Linking,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -48,6 +50,118 @@ export default function HomeScreen({ navigation }: Props) {
   const [allergies, setAllergies] = useState<Allergy[]>([]);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const imageScale = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+  // Create animated values for dietary options
+  const dietaryOptionAnims = useRef(
+    DIETARY_OPTIONS.map(() => ({
+      opacity: new Animated.Value(0),
+      translateY: new Animated.Value(30)
+    }))
+  ).current;
+
+  // Animation functions
+  const animateIn = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Animate dietary options with stagger
+    dietaryOptionAnims.forEach((anim, index) => {
+      Animated.parallel([
+        Animated.timing(anim.opacity, {
+          toValue: 1,
+          duration: 600,
+          delay: index * 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim.translateY, {
+          toValue: 0,
+          duration: 600,
+          delay: index * 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  };
+
+  const animateButtonPress = () => {
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const animateImageAppear = () => {
+    Animated.spring(imageScale, {
+      toValue: 1,
+      tension: 50,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const animatePulse = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  };
+
+  // Start animations on mount
+  useEffect(() => {
+    animateIn();
+    if (isLoading) {
+      animatePulse();
+    }
+  }, [isLoading]);
+
+  // Animate image when it appears
+  useEffect(() => {
+    if (imageUri) {
+      animateImageAppear();
+    }
+  }, [imageUri]);
 
   const toggleDietaryRestriction = (id: string) => {
     setDietaryRestrictions(prev =>
@@ -113,6 +227,8 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   const handleSubmit = async () => {
+    animateButtonPress();
+    
     if (!recipe.trim() && !imageUri) {
       Alert.alert('Error', 'Please enter a recipe or choose an image.');
       return;
@@ -141,6 +257,7 @@ export default function HomeScreen({ navigation }: Props) {
     setIsLoading(true);
 
     try {
+      console.log('API_BASE_URL:', API_BASE_URL);
       let response;
 
       if (imageUri) {
@@ -157,15 +274,17 @@ export default function HomeScreen({ navigation }: Props) {
           formData.append('allergies', allergy.name);
         });
 
-        response = await fetch(`${API_BASE_URL}/adapt-from-image`, {
+        const imageUrl = `${API_BASE_URL}/adapt-from-image`;
+        console.log('Image upload URL:', imageUrl);
+        response = await fetch(imageUrl, {
           method: 'POST',
           body: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          // Don't set Content-Type header - let fetch set it automatically for FormData
         });
       } else {
-        response = await fetch(`${API_BASE_URL}/adapt-recipe`, {
+        const recipeUrl = `${API_BASE_URL}/adapt-recipe`;
+        console.log('Recipe URL:', recipeUrl);
+        response = await fetch(recipeUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -179,10 +298,56 @@ export default function HomeScreen({ navigation }: Props) {
       }
 
       if (!response.ok) {
-        throw new Error('Failed to adapt recipe');
+        const errorText = await response.text();
+        console.log('API Error Response:', errorText);
+        throw new Error(`Failed to adapt recipe: ${response.status} ${response.statusText}`);
       }
 
-      const data: RecipeResponse = await response.json();
+      const responseText = await response.text();
+      
+      let data: RecipeResponse;
+      try {
+        // Clean the response text in case there's extra content
+        let cleanResponse = responseText.trim();
+        
+        // If response starts with HTML, extract JSON from it
+        if (cleanResponse.startsWith('<')) {
+          const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            cleanResponse = jsonMatch[0];
+          } else {
+            throw new Error('No JSON found in HTML response');
+          }
+        }
+        
+        data = JSON.parse(cleanResponse);
+        
+        // Validate the response structure
+        if (!data.adapted_recipe) {
+          console.log('Invalid response structure:', data);
+          
+          // Try to extract recipe from nutrition_facts if it's there
+          if (data.nutrition_facts && data.nutrition_facts.length > 0) {
+            console.log('Attempting to extract recipe from nutrition_facts');
+            const nutritionText = data.nutrition_facts.join(' ');
+            if (nutritionText.includes('Title:') || nutritionText.includes('Ingredients:')) {
+              data.adapted_recipe = nutritionText;
+              data.nutrition_facts = [];
+            }
+          }
+          
+          if (!data.adapted_recipe) {
+            throw new Error('Invalid response: missing adapted_recipe');
+          }
+        }
+        
+        console.log('Parsed data successfully');
+      } catch (parseError) {
+        console.log('JSON Parse Error:', parseError);
+        console.log('Raw response:', responseText);
+        throw new Error(`Failed to parse server response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+      }
+      
       navigation.navigate('RecipeResult', { result: data });
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'An error occurred');
@@ -198,13 +363,32 @@ export default function HomeScreen({ navigation }: Props) {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View 
+          style={[
+            styles.header,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
           <Text style={styles.title}>AdaptiveEats</Text>
           <Text style={styles.subtitle}>AI-powered recipe adaptation</Text>
-        </View>
+        </Animated.View>
 
         {/* Main Content */}
-        <View style={styles.content}>
+        <Animated.View 
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [
+                { translateY: slideAnim },
+                { scale: scaleAnim }
+              ]
+            }
+          ]}
+        >
           <Text style={styles.sectionTitle}>Transform Any Recipe</Text>
           <Text style={styles.sectionSubtitle}>
             Upload an image or paste a recipe to get AI-powered adaptations for your dietary needs
@@ -236,7 +420,14 @@ export default function HomeScreen({ navigation }: Props) {
               </TouchableOpacity>
             </View>
             {imageUri && (
-              <View style={styles.imagePreview}>
+              <Animated.View 
+                style={[
+                  styles.imagePreview,
+                  {
+                    transform: [{ scale: imageScale }]
+                  }
+                ]}
+              >
                 <Image source={{ uri: imageUri }} style={styles.previewImage} />
                 <TouchableOpacity
                   style={styles.removeImageButton}
@@ -244,7 +435,7 @@ export default function HomeScreen({ navigation }: Props) {
                 >
                   <Text style={styles.removeImageText}>✕</Text>
                 </TouchableOpacity>
-              </View>
+              </Animated.View>
             )}
           </View>
 
@@ -252,38 +443,59 @@ export default function HomeScreen({ navigation }: Props) {
           <View style={styles.inputSection}>
             <Text style={styles.label}>Dietary Restrictions</Text>
             <View style={styles.optionsGrid}>
-              {dietaryRestrictions.map((option) => (
-                <TouchableOpacity
+              {dietaryRestrictions.map((option, index) => (
+                <Animated.View
                   key={option.id}
-                  style={[
-                    styles.optionButton,
-                    option.selected && styles.optionButtonSelected
-                  ]}
-                  onPress={() => toggleDietaryRestriction(option.id)}
+                  style={{
+                    opacity: dietaryOptionAnims[index].opacity,
+                    transform: [
+                      { translateY: dietaryOptionAnims[index].translateY }
+                    ]
+                  }}
                 >
-                  <Text style={[
-                    styles.optionText,
-                    option.selected && styles.optionTextSelected
-                  ]}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.optionButton,
+                      option.selected && styles.optionButtonSelected
+                    ]}
+                    onPress={() => {
+                      animateButtonPress();
+                      toggleDietaryRestriction(option.id);
+                    }}
+                  >
+                    <Text style={[
+                      styles.optionText,
+                      option.selected && styles.optionTextSelected
+                    ]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
               ))}
             </View>
           </View>
 
           {/* Submit Button */}
-          <TouchableOpacity
-            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={isLoading}
+          <Animated.View
+            style={{
+              transform: [
+                { scale: buttonScale },
+                ...(isLoading ? [{ scale: pulseAnim }] : [])
+              ]
+            }}
           >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitButtonText}>🍞 Adapt Recipe</Text>
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitButtonText}>🍞 Adapt Recipe</Text>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
 
           {/* Footer */}
           <View style={styles.footer}>
@@ -302,7 +514,7 @@ export default function HomeScreen({ navigation }: Props) {
               </Text>
             </Text>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </LinearGradient>
   );
@@ -425,6 +637,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.2)',
     borderWidth: 2,
     borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   optionButtonSelected: {
     backgroundColor: '#dc3545',
@@ -444,6 +664,14 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginTop: 20,
+    shadowColor: '#ff6b35',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
   },
   submitButtonDisabled: {
     opacity: 0.6,

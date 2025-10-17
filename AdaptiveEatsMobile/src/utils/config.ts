@@ -1,5 +1,5 @@
-// Replace this with your actual domain URL
-export const API_BASE_URL = 'https://your-domain.com';
+// Production API URL
+export const API_BASE_URL = 'https://web-production-43944c.up.railway.app';
 
-// For development, you can use:
+// For local development, you can use:
 // export const API_BASE_URL = 'http://localhost:8000';

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Share,
   Linking,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -28,8 +29,53 @@ interface Props {
 
 export default function RecipeResultScreen({ navigation, route }: Props) {
   const { result } = route.params;
+  
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+
+  // Start animations on mount
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const animateButtonPress = () => {
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const shareRecipe = async () => {
+    animateButtonPress();
     try {
       await Share.share({
         message: `Check out this adapted recipe!\n\n${result.adapted_recipe}`,
@@ -46,14 +92,20 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.content}>
+        <Animated.View 
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [
+                { translateY: slideAnim },
+                { scale: scaleAnim }
+              ]
+            }
+          ]}
+        >
           <Text style={styles.title}>Recipe Adapted!</Text>
           
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Original Recipe</Text>
-            <Text style={styles.recipeText}>{result.original_recipe}</Text>
-          </View>
-
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Adapted Recipe</Text>
             <Text style={styles.recipeText}>{result.adapted_recipe}</Text>
@@ -82,15 +134,30 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
           )}
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.shareButton} onPress={shareRecipe}>
-              <Text style={styles.shareButtonText}>Share Recipe</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.newRecipeButton}
-              onPress={() => navigation.navigate('Home')}
+            <Animated.View
+              style={{
+                transform: [{ scale: buttonScale }]
+              }}
             >
-              <Text style={styles.newRecipeButtonText}>Adapt Another Recipe</Text>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.shareButton} onPress={shareRecipe}>
+                <Text style={styles.shareButtonText}>Share Recipe</Text>
+              </TouchableOpacity>
+            </Animated.View>
+            <Animated.View
+              style={{
+                transform: [{ scale: buttonScale }]
+              }}
+            >
+              <TouchableOpacity
+                style={styles.newRecipeButton}
+                onPress={() => {
+                  animateButtonPress();
+                  navigation.navigate('Home');
+                }}
+              >
+                <Text style={styles.newRecipeButtonText}>Adapt Another Recipe</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
 
           {/* Footer */}
@@ -110,7 +177,7 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
               </Text>
             </Text>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </LinearGradient>
   );
@@ -180,6 +247,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    shadowColor: '#28a745',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
   },
   shareButtonText: {
     color: '#fff',
@@ -191,6 +266,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    shadowColor: '#ff6b35',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
   },
   newRecipeButtonText: {
     color: '#fff',
