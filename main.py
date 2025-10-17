@@ -22,8 +22,9 @@ app.add_middleware(
         "http://localhost:3000", 
         "http://127.0.0.1:3000",
         "https://adaptive-eats.vercel.app",  # Production frontend URL
-        "https://*.vercel.app",  # Vercel preview URLs
         "https://adaptive-eats-frontend.vercel.app",  # Alternative Vercel URL
+        "https://*.vercel.app",  # Vercel preview URLs
+        "https://adaptive-eats-git-main.vercel.app",  # Vercel branch URLs
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly allow OPTIONS

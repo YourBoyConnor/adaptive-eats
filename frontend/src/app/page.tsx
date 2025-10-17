@@ -59,6 +59,10 @@ export default function Home() {
     try {
       let response;
       
+      // Debug: Log the API URL being used
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      console.log('API URL being used:', apiUrl);
+      
       if (imageFile) {
         const formData = new FormData();
         formData.append('file', imageFile);
@@ -69,12 +73,16 @@ export default function Home() {
           formData.append('allergies', allergy);
         });
         
-        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/adapt-from-image`, {
+        const imageUrl = `${apiUrl}/adapt-from-image`;
+        console.log('Image upload URL:', imageUrl);
+        response = await fetch(imageUrl, {
           method: 'POST',
           body: formData
         });
       } else {
-        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/adapt-recipe`, {
+        const recipeUrl = `${apiUrl}/adapt-recipe`;
+        console.log('Recipe URL:', recipeUrl);
+        response = await fetch(recipeUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
