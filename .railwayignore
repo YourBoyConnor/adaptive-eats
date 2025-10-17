@@ -1,13 +1,26 @@
-# Ignore frontend directory for Railway backend deployment
+# Ignore frontend directory - this is deployed separately on Vercel
 frontend/
+frontend/**
+
+# Ignore mobile app directory - this is a React Native app, not a web service
+AdaptiveEatsMobile/
+AdaptiveEatsMobile/**
+
+# Ignore node_modules in root (if any)
 node_modules/
-.git/
-.gitignore
-README.md
-MOBILE_APP_GUIDE.md
-DEPLOYMENT_GUIDE.md
-DEPLOYMENT_CHECKLIST.md
-QUICK_DEPLOY.md
-RAILWAY_FIX.md
-update-cors.js
-deploy.sh
+
+# Ignore development files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
