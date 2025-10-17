@@ -23,9 +23,10 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "https://adaptive-eats.vercel.app",  # Production frontend URL
         "https://*.vercel.app",  # Vercel preview URLs
+        "https://adaptive-eats-frontend.vercel.app",  # Alternative Vercel URL
     ],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly allow OPTIONS
     allow_headers=["*"],  # Allow all headers
 )
 
@@ -298,6 +299,18 @@ async def read_root(request: Request):
         "allergy_options": ALLERGY_OPTIONS
     })
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "message": "AdaptiveEats API is running"}
+
+@app.options("/health")
+async def health_check_options():
+    return {"message": "OK"}
+
+@app.options("/adapt-recipe")
+async def adapt_recipe_options():
+    return {"message": "OK"}
+
 @app.post("/adapt-recipe", response_model=RecipeResponse)
 async def adapt_recipe(request: RecipeRequest):
     """
@@ -322,6 +335,10 @@ async def adapt_recipe(request: RecipeRequest):
         nutrition_facts=nutrition,
     )
 
+
+@app.options("/adapt-from-image")
+async def adapt_from_image_options():
+    return {"message": "OK"}
 
 @app.post("/adapt-from-image", response_model=RecipeResponse)
 async def adapt_from_image(
