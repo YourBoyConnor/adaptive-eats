@@ -154,25 +154,43 @@ def adapt_recipe_with_ai(recipe_text: str, dietary_restrictions: List[str], alle
         nutr_start = upper_text.find("NUTRITION")
 
         if adapted_start != -1:
-            end_idx = min(x for x in [subs_start, nutr_start, len(text)] if x != -1) if (subs_start != -1 or nutr_start != -1) else len(text)
+            # Find the end of the adapted recipe section
+            if subs_start != -1 and nutr_start != -1:
+                end_idx = min(subs_start, nutr_start)
+            elif subs_start != -1:
+                end_idx = subs_start
+            elif nutr_start != -1:
+                end_idx = nutr_start
+            else:
+                end_idx = len(text)
             adapted_recipe = text[adapted_start + len("ADAPTED_RECIPE:"):end_idx].strip()
         else:
             adapted_recipe = text.strip()
 
         substitutions: List[str] = []
         if subs_start != -1:
-            subs_end = nutr_start if nutr_start != -1 else len(text)
-            # Skip the header line regardless of its exact wording (e.g., 'SUBSTITUTIONS (vs baseline):')
+            # Find the end of the substitutions section
+            if nutr_start != -1:
+                subs_end = nutr_start
+            else:
+                subs_end = len(text)
             subs_block = text[subs_start:subs_end]
             subs_lines = subs_block.split("\n")
+            # Skip the header line
             subs_lines = subs_lines[1:] if subs_lines else []
-            substitutions = [l.strip() for l in subs_lines if "->" in l]
+            substitutions = [l.strip() for l in subs_lines if "->" in l and l.strip()]
 
         nutrition: List[str] = []
         if nutr_start != -1:
             nutr_text = text[nutr_start:].split("\n", 1)[1] if "\n" in text[nutr_start:] else ""
-            nutrition = [line.strip() for line in nutr_text.split("\n") if line.strip()]
+            nutrition = [line.strip() for line in nutr_text.split("\n") if line.strip() and not line.strip().startswith("SUBSTITUTIONS")]
 
+        # Debug logging
+        print(f"DEBUG - Adapted recipe length: {len(adapted_recipe)}")
+        print(f"DEBUG - Substitutions count: {len(substitutions)}")
+        print(f"DEBUG - Nutrition count: {len(nutrition)}")
+        print(f"DEBUG - Adapted recipe preview: {adapted_recipe[:100]}...")
+        
         # Return adapted recipe plus parsed lists
         return adapted_recipe, substitutions, nutrition
         
@@ -272,24 +290,43 @@ def generate_recipe_from_image_with_ai(image_data_url: str, dietary_restrictions
         nutr_start = upper_text.find("NUTRITION")
 
         if adapted_start != -1:
-            end_idx = min(x for x in [subs_start, nutr_start, len(text)] if x != -1) if (subs_start != -1 or nutr_start != -1) else len(text)
+            # Find the end of the adapted recipe section
+            if subs_start != -1 and nutr_start != -1:
+                end_idx = min(subs_start, nutr_start)
+            elif subs_start != -1:
+                end_idx = subs_start
+            elif nutr_start != -1:
+                end_idx = nutr_start
+            else:
+                end_idx = len(text)
             adapted_recipe = text[adapted_start + len("ADAPTED_RECIPE:"):end_idx].strip()
         else:
             adapted_recipe = text.strip()
 
         substitutions: List[str] = []
         if subs_start != -1:
-            subs_end = nutr_start if nutr_start != -1 else len(text)
+            # Find the end of the substitutions section
+            if nutr_start != -1:
+                subs_end = nutr_start
+            else:
+                subs_end = len(text)
             subs_block = text[subs_start:subs_end]
             subs_lines = subs_block.split("\n")
+            # Skip the header line
             subs_lines = subs_lines[1:] if subs_lines else []
-            substitutions = [l.strip() for l in subs_lines if "->" in l]
+            substitutions = [l.strip() for l in subs_lines if "->" in l and l.strip()]
 
         nutrition: List[str] = []
         if nutr_start != -1:
             nutr_text = text[nutr_start:].split("\n", 1)[1] if "\n" in text[nutr_start:] else ""
-            nutrition = [line.strip() for line in nutr_text.split("\n") if line.strip()]
+            nutrition = [line.strip() for line in nutr_text.split("\n") if line.strip() and not line.strip().startswith("SUBSTITUTIONS")]
 
+        # Debug logging
+        print(f"DEBUG - Adapted recipe length: {len(adapted_recipe)}")
+        print(f"DEBUG - Substitutions count: {len(substitutions)}")
+        print(f"DEBUG - Nutrition count: {len(nutrition)}")
+        print(f"DEBUG - Adapted recipe preview: {adapted_recipe[:100]}...")
+        
         return adapted_recipe, substitutions, nutrition
 
     except Exception as e:

@@ -48,6 +48,7 @@ export default function HomeScreen({ navigation }: Props) {
     DIETARY_OPTIONS.map(option => ({ ...option, selected: false }))
   );
   const [allergies, setAllergies] = useState<Allergy[]>([]);
+  const [newAllergy, setNewAllergy] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -172,13 +173,20 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   const addAllergy = (name: string) => {
-    if (name.trim() && !allergies.find(a => a.name === name.trim())) {
+    if (name.trim() && !allergies.find(a => a.name.toLowerCase() === name.trim().toLowerCase())) {
       setAllergies(prev => [...prev, { id: Date.now().toString(), name: name.trim() }]);
+      setNewAllergy('');
     }
   };
 
   const removeAllergy = (id: string) => {
     setAllergies(prev => prev.filter(a => a.id !== id));
+  };
+
+  const handleAddAllergy = () => {
+    if (newAllergy.trim()) {
+      addAllergy(newAllergy);
+    }
   };
 
   const pickImage = async () => {
@@ -303,50 +311,33 @@ export default function HomeScreen({ navigation }: Props) {
         throw new Error(`Failed to adapt recipe: ${response.status} ${response.statusText}`);
       }
 
-      const responseText = await response.text();
+      const data: RecipeResponse = await response.json();
       
-      let data: RecipeResponse;
-      try {
-        // Clean the response text in case there's extra content
-        let cleanResponse = responseText.trim();
-        
-        // If response starts with HTML, extract JSON from it
-        if (cleanResponse.startsWith('<')) {
-          const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            cleanResponse = jsonMatch[0];
-          } else {
-            throw new Error('No JSON found in HTML response');
-          }
-        }
-        
-        data = JSON.parse(cleanResponse);
-        
-        // Validate the response structure
-        if (!data.adapted_recipe) {
-          console.log('Invalid response structure:', data);
-          
-          // Try to extract recipe from nutrition_facts if it's there
-          if (data.nutrition_facts && data.nutrition_facts.length > 0) {
-            console.log('Attempting to extract recipe from nutrition_facts');
-            const nutritionText = data.nutrition_facts.join(' ');
-            if (nutritionText.includes('Title:') || nutritionText.includes('Ingredients:')) {
-              data.adapted_recipe = nutritionText;
-              data.nutrition_facts = [];
-            }
-          }
-          
-          if (!data.adapted_recipe) {
-            throw new Error('Invalid response: missing adapted_recipe');
-          }
-        }
-        
-        console.log('Parsed data successfully');
-      } catch (parseError) {
-        console.log('JSON Parse Error:', parseError);
-        console.log('Raw response:', responseText);
-        throw new Error(`Failed to parse server response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+      // Debug logging
+      console.log('Raw API response:', JSON.stringify(data, null, 2));
+      
+      // Validate the response structure
+      if (!data.adapted_recipe) {
+        console.log('Invalid response structure:', data);
+        throw new Error('Invalid response: missing adapted_recipe');
       }
+      
+      // Ensure arrays are properly initialized
+      if (!Array.isArray(data.substitutions_made)) {
+        data.substitutions_made = [];
+      }
+      
+      if (!Array.isArray(data.nutrition_facts)) {
+        data.nutrition_facts = [];
+      }
+      
+      console.log('Parsed data successfully:', {
+        adapted_recipe_preview: data.adapted_recipe?.substring(0, 100) + '...',
+        substitutions_count: data.substitutions_made?.length || 0,
+        nutrition_count: data.nutrition_facts?.length || 0,
+        substitutions: data.substitutions_made,
+        nutrition: data.nutrition_facts
+      });
       
       navigation.navigate('RecipeResult', { result: data });
     } catch (error) {
@@ -361,11 +352,10 @@ export default function HomeScreen({ navigation }: Props) {
       colors={['#667eea', '#764ba2']}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
+      <View style={styles.header}>
         <Animated.View 
           style={[
-            styles.header,
+            styles.headerContent,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }]
@@ -375,8 +365,13 @@ export default function HomeScreen({ navigation }: Props) {
           <Text style={styles.title}>AdaptiveEats</Text>
           <Text style={styles.subtitle}>AI-powered recipe adaptation</Text>
         </Animated.View>
+      </View>
 
-        {/* Main Content */}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View 
           style={[
             styles.content,
@@ -389,100 +384,145 @@ export default function HomeScreen({ navigation }: Props) {
             }
           ]}
         >
-          <Text style={styles.sectionTitle}>Transform Any Recipe</Text>
-          <Text style={styles.sectionSubtitle}>
-            Upload an image or paste a recipe to get AI-powered adaptations for your dietary needs
-          </Text>
-
-          {/* Recipe Input */}
-          <View style={styles.inputSection}>
-            <Text style={styles.label}>Recipe</Text>
-            <TextInput
-              style={styles.textInput}
-              value={recipe}
-              onChangeText={setRecipe}
-              placeholder="Paste your recipe here... (optional if uploading image)"
-              placeholderTextColor="#999"
-              multiline
-              numberOfLines={4}
-            />
-          </View>
-
-          {/* Image Upload */}
-          <View style={styles.inputSection}>
-            <Text style={styles.label}>Or upload a food image</Text>
-            <View style={styles.imageButtons}>
-              <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-                <Text style={styles.imageButtonText}>📷 Choose Photo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.imageButton} onPress={takePhoto}>
-                <Text style={styles.imageButtonText}>📸 Take Photo</Text>
-              </TouchableOpacity>
+          {/* Input Method Selection */}
+          <View style={styles.inputMethodSection}>
+            <Text style={styles.sectionTitle}>How would you like to start?</Text>
+            
+            {/* Recipe Input */}
+            <View style={styles.inputCard}>
+              <Text style={styles.inputCardTitle}>📝 Text Recipe</Text>
+              <TextInput
+                style={styles.textInput}
+                value={recipe}
+                onChangeText={setRecipe}
+                placeholder="Paste your recipe here..."
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={3}
+              />
             </View>
-            {imageUri && (
-              <Animated.View 
-                style={[
-                  styles.imagePreview,
-                  {
-                    transform: [{ scale: imageScale }]
-                  }
-                ]}
-              >
-                <Image source={{ uri: imageUri }} style={styles.previewImage} />
-                <TouchableOpacity
-                  style={styles.removeImageButton}
-                  onPress={() => setImageUri(null)}
-                >
-                  <Text style={styles.removeImageText}>✕</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            )}
-          </View>
 
-          {/* Dietary Restrictions */}
-          <View style={styles.inputSection}>
-            <Text style={styles.label}>Dietary Restrictions</Text>
-            <View style={styles.optionsGrid}>
-              {dietaryRestrictions.map((option, index) => (
-                <Animated.View
-                  key={option.id}
-                  style={{
-                    opacity: dietaryOptionAnims[index].opacity,
-                    transform: [
-                      { translateY: dietaryOptionAnims[index].translateY }
-                    ]
-                  }}
+            {/* Image Upload */}
+            <View style={styles.inputCard}>
+              <Text style={styles.inputCardTitle}>📷 Food Image</Text>
+              <View style={styles.imageButtons}>
+                <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+                  <Text style={styles.imageButtonText}>📷 Gallery</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.imageButton} onPress={takePhoto}>
+                  <Text style={styles.imageButtonText}>📸 Camera</Text>
+                </TouchableOpacity>
+              </View>
+              {imageUri && (
+                <Animated.View 
+                  style={[
+                    styles.imagePreview,
+                    {
+                      transform: [{ scale: imageScale }]
+                    }
+                  ]}
                 >
+                  <Image source={{ uri: imageUri }} style={styles.previewImage} />
                   <TouchableOpacity
-                    style={[
-                      styles.optionButton,
-                      option.selected && styles.optionButtonSelected
-                    ]}
-                    onPress={() => {
-                      animateButtonPress();
-                      toggleDietaryRestriction(option.id);
-                    }}
+                    style={styles.removeImageButton}
+                    onPress={() => setImageUri(null)}
                   >
-                    <Text style={[
-                      styles.optionText,
-                      option.selected && styles.optionTextSelected
-                    ]}>
-                      {option.label}
-                    </Text>
+                    <Text style={styles.removeImageText}>✕</Text>
                   </TouchableOpacity>
                 </Animated.View>
-              ))}
+              )}
+            </View>
+          </View>
+
+          {/* Dietary Preferences */}
+          <View style={styles.preferencesSection}>
+            <Text style={styles.sectionTitle}>Your Preferences</Text>
+            
+            {/* Dietary Restrictions */}
+            <View style={styles.preferenceCard}>
+              <Text style={styles.preferenceLabel}>Dietary Restrictions</Text>
+              <View style={styles.optionsGrid}>
+                {dietaryRestrictions.map((option, index) => (
+                  <Animated.View
+                    key={option.id}
+                    style={{
+                      opacity: dietaryOptionAnims[index].opacity,
+                      transform: [
+                        { translateY: dietaryOptionAnims[index].translateY }
+                      ]
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.optionButton,
+                        option.selected && styles.optionButtonSelected
+                      ]}
+                      onPress={() => {
+                        animateButtonPress();
+                        toggleDietaryRestriction(option.id);
+                      }}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        option.selected && styles.optionTextSelected
+                      ]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
+                ))}
+              </View>
+            </View>
+
+            {/* Allergies */}
+            <View style={styles.preferenceCard}>
+              <Text style={styles.preferenceLabel}>Allergies</Text>
+              <View style={styles.allergyInputContainer}>
+                <TextInput
+                  style={styles.allergyInput}
+                  value={newAllergy}
+                  onChangeText={setNewAllergy}
+                  placeholder="Add an allergy..."
+                  placeholderTextColor="#999"
+                  onSubmitEditing={handleAddAllergy}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity 
+                  style={styles.addAllergyButton}
+                  onPress={handleAddAllergy}
+                >
+                  <Text style={styles.addAllergyButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+              {allergies.length > 0 && (
+                <View style={styles.allergyTags}>
+                  {allergies.map((allergy) => (
+                    <View key={allergy.id} style={styles.allergyTag}>
+                      <Text style={styles.allergyTagText}>{allergy.name}</Text>
+                      <TouchableOpacity
+                        onPress={() => removeAllergy(allergy.id)}
+                        style={styles.removeAllergyButton}
+                      >
+                        <Text style={styles.removeAllergyText}>×</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           </View>
 
           {/* Submit Button */}
           <Animated.View
-            style={{
-              transform: [
-                { scale: buttonScale },
-                ...(isLoading ? [{ scale: pulseAnim }] : [])
-              ]
-            }}
+            style={[
+              styles.submitContainer,
+              {
+                transform: [
+                  { scale: buttonScale },
+                  ...(isLoading ? [{ scale: pulseAnim }] : [])
+                ]
+              }
+            ]}
           >
             <TouchableOpacity
               style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
@@ -496,26 +536,26 @@ export default function HomeScreen({ navigation }: Props) {
               )}
             </TouchableOpacity>
           </Animated.View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Powered by AI • Transform any recipe to fit your dietary needs
-            </Text>
-            <Text style={styles.creditText}>
-              Made by{' '}
-              <Text 
-                style={styles.creditLink}
-                onPress={() => {
-                  Linking.openURL('https://connorpymm.com');
-                }}
-              >
-                Connor Pymm
-              </Text>
-            </Text>
-          </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Fixed Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          Powered by AI • Transform any recipe to fit your dietary needs
+        </Text>
+        <Text style={styles.creditText}>
+          Made by{' '}
+          <Text 
+            style={styles.creditLink}
+            onPress={() => {
+              Linking.openURL('https://connorpymm.com');
+            }}
+          >
+            Connor Pymm
+          </Text>
+        </Text>
+      </View>
     </LinearGradient>
   );
 }
@@ -524,106 +564,128 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
-  },
   header: {
-    padding: 20,
-    paddingTop: 60,
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#e0e0e0',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   content: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    margin: 20,
-    borderRadius: 20,
-    padding: 20,
-    backdropFilter: 'blur(10px)',
+    paddingHorizontal: 20,
+  },
+  inputMethodSection: {
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 16,
     textAlign: 'center',
-    marginBottom: 8,
   },
-  sectionSubtitle: {
-    fontSize: 16,
-    color: '#e0e0e0',
-    textAlign: 'center',
-    marginBottom: 30,
+  inputCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  inputSection: {
-    marginBottom: 20,
-  },
-  label: {
+  inputCardTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   textInput: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderWidth: 2,
+    borderWidth: 1,
     borderRadius: 12,
-    padding: 15,
+    padding: 12,
     color: '#fff',
     fontSize: 16,
     textAlignVertical: 'top',
+    minHeight: 80,
   },
   imageButtons: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   imageButton: {
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    borderWidth: 2,
+    borderWidth: 1,
     borderStyle: 'dashed',
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
   },
   imageButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '500',
   },
   imagePreview: {
-    marginTop: 10,
+    marginTop: 12,
     position: 'relative',
   },
   previewImage: {
     width: '100%',
-    height: 200,
+    height: 150,
     borderRadius: 12,
   },
   removeImageButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 8,
+    right: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 15,
-    width: 30,
-    height: 30,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   removeImageText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
+  },
+  preferencesSection: {
+    marginBottom: 24,
+  },
+  preferenceCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  preferenceLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 12,
   },
   optionsGrid: {
     flexDirection: 'row',
@@ -631,39 +693,92 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   optionButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderWidth: 2,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderWidth: 1,
+    borderRadius: 16,
   },
   optionButtonSelected: {
-    backgroundColor: '#dc3545',
-    borderColor: '#c82333',
+    backgroundColor: '#ff6b35',
+    borderColor: '#e55a2b',
   },
   optionText: {
     color: '#e0e0e0',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   optionTextSelected: {
     color: '#fff',
   },
-  submitButton: {
+  allergyInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  allergyInput: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    color: '#fff',
+    fontSize: 16,
+  },
+  addAllergyButton: {
     backgroundColor: '#ff6b35',
     borderRadius: 12,
-    padding: 16,
+    width: 40,
+    height: 40,
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'center',
+  },
+  addAllergyButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  allergyTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  allergyTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 107, 53, 0.2)',
+    borderColor: '#ff6b35',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  allergyTagText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '500',
+    marginRight: 6,
+  },
+  removeAllergyButton: {
+    marginLeft: 4,
+  },
+  removeAllergyText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  submitContainer: {
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  submitButton: {
+    backgroundColor: '#ff6b35',
+    borderRadius: 16,
+    padding: 18,
+    alignItems: 'center',
     shadowColor: '#ff6b35',
     shadowOffset: {
       width: 0,
@@ -682,21 +797,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   footer: {
-    marginTop: 30,
-    paddingTop: 20,
+    padding: 16,
+    paddingBottom: 20,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
   },
   footerText: {
     color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 14,
+    fontSize: 12,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   creditText: {
     color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'center',
   },
   creditLink: {

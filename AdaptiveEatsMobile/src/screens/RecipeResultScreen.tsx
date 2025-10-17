@@ -30,6 +30,15 @@ interface Props {
 export default function RecipeResultScreen({ navigation, route }: Props) {
   const { result } = route.params;
   
+  // Debug logging
+  console.log('RecipeResultScreen received data:', {
+    adapted_recipe_preview: result.adapted_recipe?.substring(0, 100) + '...',
+    substitutions_count: result.substitutions_made?.length || 0,
+    nutrition_count: result.nutrition_facts?.length || 0,
+    substitutions: result.substitutions_made,
+    nutrition: result.nutrition_facts
+  });
+  
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -91,7 +100,11 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
       colors={['#667eea', '#764ba2']}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View 
           style={[
             styles.content,
@@ -104,30 +117,35 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
             }
           ]}
         >
-          <Text style={styles.title}>Recipe Adapted!</Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>Recipe Adapted!</Text>
+            <Text style={styles.subtitle}>Your personalized recipe is ready</Text>
+          </View>
           
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Adapted Recipe</Text>
+          <View style={styles.recipeCard}>
+            <Text style={styles.cardTitle}>📝 Adapted Recipe</Text>
             <Text style={styles.recipeText}>{result.adapted_recipe}</Text>
           </View>
 
           {result.substitutions_made.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Substitutions Made</Text>
+            <View style={styles.infoCard}>
+              <Text style={styles.cardTitle}>🔄 Substitutions Made</Text>
               {result.substitutions_made.map((substitution, index) => (
-                <View key={index} style={styles.substitutionItem}>
-                  <Text style={styles.substitutionText}>• {substitution}</Text>
+                <View key={index} style={styles.listItem}>
+                  <Text style={styles.bullet}>•</Text>
+                  <Text style={styles.listText}>{substitution}</Text>
                 </View>
               ))}
             </View>
           )}
 
           {result.nutrition_facts.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Nutrition Facts</Text>
+            <View style={styles.infoCard}>
+              <Text style={styles.cardTitle}>📊 Nutrition Facts</Text>
               {result.nutrition_facts.map((fact, index) => (
-                <View key={index} style={styles.nutritionItem}>
-                  <Text style={styles.nutritionText}>• {fact}</Text>
+                <View key={index} style={styles.listItem}>
+                  <Text style={styles.bullet}>•</Text>
+                  <Text style={styles.listText}>{fact}</Text>
                 </View>
               ))}
             </View>
@@ -140,7 +158,7 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
               }}
             >
               <TouchableOpacity style={styles.shareButton} onPress={shareRecipe}>
-                <Text style={styles.shareButtonText}>Share Recipe</Text>
+                <Text style={styles.shareButtonText}>📤 Share Recipe</Text>
               </TouchableOpacity>
             </Animated.View>
             <Animated.View
@@ -155,30 +173,30 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
                   navigation.navigate('Home');
                 }}
               >
-                <Text style={styles.newRecipeButtonText}>Adapt Another Recipe</Text>
+                <Text style={styles.newRecipeButtonText}>🍞 Adapt Another</Text>
               </TouchableOpacity>
             </Animated.View>
           </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Powered by AI • Transform any recipe to fit your dietary needs
-            </Text>
-            <Text style={styles.creditText}>
-              Made by{' '}
-              <Text 
-                style={styles.creditLink}
-                onPress={() => {
-                  Linking.openURL('https://connorpymm.com');
-                }}
-              >
-                Connor Pymm
-              </Text>
-            </Text>
-          </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Fixed Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          Powered by AI • Transform any recipe to fit your dietary needs
+        </Text>
+        <Text style={styles.creditText}>
+          Made by{' '}
+          <Text 
+            style={styles.creditLink}
+            onPress={() => {
+              Linking.openURL('https://connorpymm.com');
+            }}
+          >
+            Connor Pymm
+          </Text>
+        </Text>
+      </View>
     </LinearGradient>
   );
 }
@@ -187,64 +205,87 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
-    flexGrow: 1,
+    paddingBottom: 20,
   },
   content: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    margin: 20,
-    borderRadius: 20,
-    padding: 20,
-    backdropFilter: 'blur(10px)',
+    paddingHorizontal: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingTop: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 8,
   },
-  section: {
-    marginBottom: 25,
+  subtitle: {
+    fontSize: 14,
+    color: '#e0e0e0',
+    textAlign: 'center',
   },
-  sectionTitle: {
-    fontSize: 20,
+  recipeCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  infoCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  cardTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#ff6b35',
     marginBottom: 12,
   },
   recipeText: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#e0e0e0',
-    lineHeight: 24,
+    lineHeight: 22,
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    padding: 15,
+    padding: 12,
     borderRadius: 12,
   },
-  substitutionItem: {
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: 8,
   },
-  substitutionText: {
+  bullet: {
     fontSize: 16,
-    color: '#e0e0e0',
-    lineHeight: 22,
+    color: '#ff6b35',
+    marginRight: 8,
+    marginTop: 2,
   },
-  nutritionItem: {
-    marginBottom: 8,
-  },
-  nutritionText: {
-    fontSize: 16,
+  listText: {
+    flex: 1,
+    fontSize: 15,
     color: '#e0e0e0',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   buttonContainer: {
-    marginTop: 20,
-    gap: 15,
+    marginTop: 8,
+    marginBottom: 20,
+    gap: 12,
   },
   shareButton: {
     backgroundColor: '#28a745',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     shadowColor: '#28a745',
@@ -263,7 +304,7 @@ const styles = StyleSheet.create({
   },
   newRecipeButton: {
     backgroundColor: '#ff6b35',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     shadowColor: '#ff6b35',
@@ -281,21 +322,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   footer: {
-    marginTop: 30,
-    paddingTop: 20,
+    padding: 16,
+    paddingBottom: 20,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
   },
   footerText: {
     color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 14,
+    fontSize: 12,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   creditText: {
     color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'center',
   },
   creditLink: {
