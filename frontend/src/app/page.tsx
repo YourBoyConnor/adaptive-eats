@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   SparklesIcon, 
@@ -52,7 +52,7 @@ export default function Home() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: 'environment', // Use back camera if available
+          facingMode: 'environment',
           width: { ideal: 1280 },
           height: { ideal: 720 }
         } 
@@ -60,35 +60,47 @@ export default function Home() {
       
       setShowCamera(true);
       
-      // Create a video element to show camera feed
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.play();
+      // Use useEffect-like behavior with a ref
+      const setupCamera = () => {
+        const container = document.getElementById('camera-container');
+        if (container) {
+          container.innerHTML = `
+            <div class="space-y-4">
+              <video id="camera-video" autoplay playsinline style="width: 100%; max-height: 400px; border-radius: 0.75rem; object-fit: cover;"></video>
+              <div class="flex gap-4 justify-center">
+                <button id="capture-btn" class="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
+                  📸 Capture Photo
+                </button>
+                <button id="cancel-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium">
+                  ❌ Cancel
+                </button>
+              </div>
+            </div>
+          `;
+          
+          const video = document.getElementById('camera-video') as HTMLVideoElement;
+          const captureBtn = document.getElementById('capture-btn');
+          const cancelBtn = document.getElementById('cancel-btn');
+          
+          if (video) {
+            video.srcObject = stream;
+          }
+          
+          if (captureBtn) {
+            captureBtn.onclick = () => capturePhoto(video, stream);
+          }
+          
+          if (cancelBtn) {
+            cancelBtn.onclick = () => {
+              stream.getTracks().forEach(track => track.stop());
+              setShowCamera(false);
+            };
+          }
+        }
+      };
       
-      // Add video to a temporary container
-      const container = document.getElementById('camera-container');
-      if (container) {
-        container.innerHTML = '';
-        container.appendChild(video);
-        
-        // Add capture button
-        const captureBtn = document.createElement('button');
-        captureBtn.textContent = 'Capture Photo';
-        captureBtn.className = 'mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors';
-        captureBtn.onclick = () => capturePhoto(video, stream);
-        container.appendChild(captureBtn);
-        
-        // Add cancel button
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'Cancel';
-        cancelBtn.className = 'mt-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors ml-2';
-        cancelBtn.onclick = () => {
-          stream.getTracks().forEach(track => track.stop());
-          setShowCamera(false);
-          container.innerHTML = '';
-        };
-        container.appendChild(cancelBtn);
-      }
+      // Setup camera after state update
+      setTimeout(setupCamera, 100);
     } catch (error) {
       alert('Camera access denied or not available. Please use file upload instead.');
     }
@@ -128,6 +140,20 @@ export default function Home() {
     setImageFile(null);
     setImagePreview(null);
   };
+
+  // Cleanup camera stream when component unmounts or showCamera changes
+  useEffect(() => {
+    return () => {
+      if (showCamera) {
+        // Cleanup any active camera streams
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+          stream.getTracks().forEach(track => track.stop());
+        }).catch(() => {
+          // Ignore errors during cleanup
+        });
+      }
+    };
+  }, [showCamera]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -268,10 +294,14 @@ export default function Home() {
 
               {/* Camera Container */}
               {showCamera && (
-                <div id="camera-container" className="border-2 border-white/30 rounded-xl p-4 bg-black/20">
-                  {/* Camera feed will be inserted here */}
+                <div className="border-2 border-white/30 rounded-xl p-6 bg-black/30">
+                  <div id="camera-container" className="text-center">
+                    <p className="text-white/70 mb-4">Camera is starting...</p>
+                    {/* Camera feed will be inserted here */}
+                  </div>
                 </div>
               )}
+
 
               {/* Upload Options */}
               {!imagePreview && !showCamera && (
