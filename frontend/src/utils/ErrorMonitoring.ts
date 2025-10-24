@@ -207,8 +207,8 @@ class ErrorMonitoring {
     this.sendToMonitoringService(errorInfo);
 
     // Track with analytics
-    if (typeof window !== 'undefined' && (window as { gtag?: Function }).gtag) {
-      (window as { gtag: Function }).gtag('event', 'exception', {
+    if (typeof window !== 'undefined' && (window as { gtag?: (command: string, targetId: string, config?: Record<string, unknown>) => void }).gtag) {
+      (window as { gtag: (command: string, targetId: string, config?: Record<string, unknown>) => void }).gtag('event', 'exception', {
         description: errorInfo.message,
         fatal: errorInfo.severity === 'critical',
         error_type: errorInfo.context?.type || 'unknown',
