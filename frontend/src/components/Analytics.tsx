@@ -70,7 +70,7 @@ export function AnalyticsProvider() {
         const action = element.getAttribute('data-track');
         const category = element.getAttribute('data-category') || 'User Interaction';
         
-        if (typeof window !== 'undefined' && window.gtag) {
+        if (action && typeof window !== 'undefined' && window.gtag) {
           window.gtag('event', action, {
             event_category: category,
             event_label: element.textContent?.substring(0, 50) || 'Unknown',
