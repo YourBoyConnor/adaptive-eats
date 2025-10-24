@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals';
+import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
 import { errorMonitoring } from '@/utils/ErrorMonitoring';
 
 export function AnalyticsProvider() {
@@ -28,7 +28,7 @@ export function AnalyticsProvider() {
 
     // Measure Core Web Vitals
     onCLS(trackWebVitals);
-    onFID(trackWebVitals);
+    onINP(trackWebVitals);
     onFCP(trackWebVitals);
     onLCP(trackWebVitals);
     onTTFB(trackWebVitals);
