@@ -58,6 +58,7 @@ class ErrorMonitoring {
     window.addEventListener('unhandledrejection', (event) => {
       this.captureError({
         message: `Unhandled Promise Rejection: ${event.reason}`,
+        url: window.location.href,
         stack: event.reason?.stack,
         severity: 'high',
         context: {
@@ -70,9 +71,11 @@ class ErrorMonitoring {
     // Resource loading errors
     window.addEventListener('error', (event) => {
       if (event.target !== window) {
+        const target = event.target as HTMLImageElement | HTMLLinkElement;
+        const resourceUrl = 'src' in target ? target.src : target.href;
         this.captureError({
-          message: `Resource loading error: ${(event.target as HTMLImageElement | HTMLLinkElement).src || (event.target as HTMLImageElement | HTMLLinkElement).href}`,
-          url: (event.target as HTMLImageElement | HTMLLinkElement).src || (event.target as HTMLImageElement | HTMLLinkElement).href || 'unknown',
+          message: `Resource loading error: ${resourceUrl}`,
+          url: resourceUrl || 'unknown',
           severity: 'medium',
           context: {
             type: 'resource_loading',
@@ -119,19 +122,21 @@ class ErrorMonitoring {
     if ('memory' in performance) {
       setInterval(() => {
         const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
-        const usedMB = memory.usedJSHeapSize / 1024 / 1024;
-        const totalMB = memory.totalJSHeapSize / 1024 / 1024;
-        
-        if (usedMB / totalMB > 0.9) { // More than 90% memory used
-          this.capturePerformanceError({
-            type: 'memory',
-            message: `High memory usage: ${usedMB.toFixed(2)}MB / ${totalMB.toFixed(2)}MB`,
-            context: {
-              usedMB,
-              totalMB,
-              limitMB: memory.jsHeapSizeLimit / 1024 / 1024,
-            },
-          });
+        if (memory) {
+          const usedMB = memory.usedJSHeapSize / 1024 / 1024;
+          const totalMB = memory.totalJSHeapSize / 1024 / 1024;
+          
+          if (usedMB / totalMB > 0.9) { // More than 90% memory used
+            this.capturePerformanceError({
+              type: 'memory',
+              message: `High memory usage: ${usedMB.toFixed(2)}MB / ${totalMB.toFixed(2)}MB`,
+              context: {
+                usedMB,
+                totalMB,
+                limitMB: memory.jsHeapSizeLimit / 1024 / 1024,
+              },
+            });
+          }
         }
       }, 30000); // Check every 30 seconds
     }
@@ -278,11 +283,11 @@ class ErrorMonitoring {
       return acc;
     }, {} as Record<string, number>);
 
-    const errorsByType = this.errors.reduce((acc, error) => {
-      const type = error.context?.type || 'unknown';
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const errorsByType: Record<string, number> = {};
+    this.errors.forEach(error => {
+      const type = (error.context?.type || 'unknown') as string;
+      errorsByType[type] = (errorsByType[type] || 0) + 1;
+    });
 
     return {
       totalErrors,
