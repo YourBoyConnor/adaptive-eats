@@ -4,12 +4,11 @@ import { useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
-import { errorMonitoring } from '@/utils/ErrorMonitoring';
 
 export function AnalyticsProvider() {
   useEffect(() => {
     // Track Web Vitals
-    const trackWebVitals = (metric: any) => {
+    const trackWebVitals = (metric: { name: string; value: number; id: string }) => {
       // Send to analytics service
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', metric.name, {
@@ -63,8 +62,8 @@ export function AnalyticsProvider() {
         const action = element.getAttribute('data-track');
         const category = element.getAttribute('data-category') || 'User Interaction';
         
-        if (typeof window !== 'undefined' && window.gtag) {
-          window.gtag('event', action, {
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', action, {
             event_category: category,
             event_label: element.textContent?.substring(0, 50) || 'Unknown',
           });
@@ -77,9 +76,9 @@ export function AnalyticsProvider() {
     document.addEventListener('submit', trackUserInteraction);
 
     // Track recipe adaptation events
-    const trackRecipeAdaptation = (data: any) => {
-      if (typeof window !== 'undefined' && window.gtag) {
-        window.gtag('event', 'recipe_adaptation', {
+    const trackRecipeAdaptation = (data: { method: string; dietaryRestrictions: string[]; allergies: string[]; hasImage: boolean; success: boolean; error?: string }) => {
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'recipe_adaptation', {
           event_category: 'Recipe',
           event_label: data.method, // 'text' or 'image'
           value: data.dietaryRestrictions?.length || 0,
@@ -95,9 +94,7 @@ export function AnalyticsProvider() {
     // Expose tracking function globally for use in components
     (window as any).trackRecipeAdaptation = trackRecipeAdaptation;
 
-    // Error monitoring is already set up in the ErrorMonitoring class
-    // We just need to ensure it's initialized
-    console.log('Error monitoring initialized');
+    // Error monitoring is handled by the ErrorMonitoring class
 
     // Cleanup
     return () => {

@@ -3,12 +3,9 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  SparklesIcon, 
   CameraIcon, 
   DocumentTextIcon,
-  CheckCircleIcon,
-  XMarkIcon,
-  PlusIcon
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { trackRecipeAdaptation } from '@/components/Analytics';
@@ -40,7 +37,7 @@ export default function Home() {
   const [result, setResult] = useState<RecipeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
-  const [abTestConfig, setAbTestConfig] = useState<any>(null);
+  const [abTestConfig, setAbTestConfig] = useState<{ variant?: string; text?: string; style?: string; size?: string } | null>(null);
 
   const dietaryOptions = [
     'vegan', 'vegetarian', 'gluten-free', 'keto', 'paleo', 
