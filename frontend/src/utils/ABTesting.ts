@@ -3,7 +3,7 @@ interface ABTestConfig {
   variants: {
     [key: string]: {
       weight: number;
-      config: any;
+      config: Record<string, unknown>;
     };
   };
   enabled: boolean;
@@ -11,7 +11,7 @@ interface ABTestConfig {
 
 interface ABTestResult {
   variant: string;
-  config: any;
+  config: Record<string, unknown>;
   testName: string;
 }
 
@@ -57,7 +57,7 @@ class ABTesting {
   }
 
   // Select variant based on weights
-  private selectVariant(variants: { [key: string]: { weight: number; config: any } }): string {
+  private selectVariant(variants: { [key: string]: { weight: number; config: Record<string, unknown> } }): string {
     const totalWeight = Object.values(variants).reduce((sum, v) => sum + v.weight, 0);
     const random = Math.random() * totalWeight;
     

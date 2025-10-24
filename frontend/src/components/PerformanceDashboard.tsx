@@ -66,7 +66,7 @@ export function PerformanceDashboard() {
           } else if (entry.entryType === 'first-input') {
             setMetrics(prev => ({ ...prev, fid: entry.processingStart - entry.startTime }));
           } else if (entry.entryType === 'layout-shift') {
-            setMetrics(prev => ({ ...prev, cls: (prev.cls || 0) + (entry as any).value }));
+            setMetrics(prev => ({ ...prev, cls: (prev.cls || 0) + (entry as PerformanceEntry & { value: number }).value }));
           }
         });
       });

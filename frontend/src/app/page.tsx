@@ -116,7 +116,7 @@ export default function Home() {
       
       // Setup camera after state update
       setTimeout(setupCamera, 100);
-    } catch (error) {
+    } catch {
       alert('Camera access denied or not available. Please use file upload instead.');
     }
   };

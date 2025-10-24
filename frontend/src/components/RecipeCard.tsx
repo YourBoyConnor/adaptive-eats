@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { CheckCircleIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 interface RecipeResponse {
   original_recipe: string;
@@ -121,7 +121,7 @@ export function RecipeCard({ result }: RecipeCardProps) {
       {/* Header */}
       <div className="flex items-center space-x-3">
         <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-500 rounded-xl flex items-center justify-center">
-          <img src="/logo.svg" alt="Success" className="w-6 h-6" />
+          <Image src="/logo.svg" alt="Success" width={24} height={24} />
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white">Recipe Adapted!</h2>

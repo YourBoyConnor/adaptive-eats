@@ -5,6 +5,14 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
 
+// Type definitions for gtag
+declare global {
+  interface Window {
+    gtag?: (command: string, targetId: string, config?: Record<string, unknown>) => void;
+    trackRecipeAdaptation?: (data: { method: string; dietaryRestrictions: string[]; allergies: string[]; hasImage: boolean; success: boolean; error?: string }) => void;
+  }
+}
+
 export function AnalyticsProvider() {
   useEffect(() => {
     // Track Web Vitals
@@ -62,8 +70,8 @@ export function AnalyticsProvider() {
         const action = element.getAttribute('data-track');
         const category = element.getAttribute('data-category') || 'User Interaction';
         
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-          (window as any).gtag('event', action, {
+        if (typeof window !== 'undefined' && window.gtag) {
+          window.gtag('event', action, {
             event_category: category,
             event_label: element.textContent?.substring(0, 50) || 'Unknown',
           });
@@ -77,8 +85,8 @@ export function AnalyticsProvider() {
 
     // Track recipe adaptation events
     const trackRecipeAdaptation = (data: { method: string; dietaryRestrictions: string[]; allergies: string[]; hasImage: boolean; success: boolean; error?: string }) => {
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'recipe_adaptation', {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'recipe_adaptation', {
           event_category: 'Recipe',
           event_label: data.method, // 'text' or 'image'
           value: data.dietaryRestrictions?.length || 0,
@@ -92,7 +100,9 @@ export function AnalyticsProvider() {
     };
 
     // Expose tracking function globally for use in components
-    (window as any).trackRecipeAdaptation = trackRecipeAdaptation;
+    if (typeof window !== 'undefined') {
+      window.trackRecipeAdaptation = trackRecipeAdaptation;
+    }
 
     // Error monitoring is handled by the ErrorMonitoring class
 

@@ -9,7 +9,7 @@ interface ErrorInfo {
   userId?: string;
   sessionId: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 interface PerformanceError {
@@ -17,7 +17,7 @@ interface PerformanceError {
   message: string;
   duration?: number;
   timestamp: number;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 class ErrorMonitoring {
@@ -71,12 +71,12 @@ class ErrorMonitoring {
     window.addEventListener('error', (event) => {
       if (event.target !== window) {
         this.captureError({
-          message: `Resource loading error: ${(event.target as any).src || (event.target as any).href}`,
-          url: (event.target as any).src || (event.target as any).href || 'unknown',
+          message: `Resource loading error: ${(event.target as HTMLImageElement | HTMLLinkElement).src || (event.target as HTMLImageElement | HTMLLinkElement).href}`,
+          url: (event.target as HTMLImageElement | HTMLLinkElement).src || (event.target as HTMLImageElement | HTMLLinkElement).href || 'unknown',
           severity: 'medium',
           context: {
             type: 'resource_loading',
-            tagName: (event.target as any).tagName,
+            tagName: (event.target as Element).tagName,
           },
         });
       }
@@ -110,7 +110,7 @@ class ErrorMonitoring {
 
       try {
         longTaskObserver.observe({ entryTypes: ['longtask'] });
-      } catch (error) {
+      } catch {
         // Long task API not supported
       }
     }
@@ -118,7 +118,7 @@ class ErrorMonitoring {
     // Monitor memory usage (if available)
     if ('memory' in performance) {
       setInterval(() => {
-        const memory = (performance as any).memory;
+        const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
         const usedMB = memory.usedJSHeapSize / 1024 / 1024;
         const totalMB = memory.totalJSHeapSize / 1024 / 1024;
         
@@ -207,8 +207,8 @@ class ErrorMonitoring {
     this.sendToMonitoringService(errorInfo);
 
     // Track with analytics
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'exception', {
+    if (typeof window !== 'undefined' && (window as { gtag?: Function }).gtag) {
+      (window as { gtag: Function }).gtag('event', 'exception', {
         description: errorInfo.message,
         fatal: errorInfo.severity === 'critical',
         error_type: errorInfo.context?.type || 'unknown',
