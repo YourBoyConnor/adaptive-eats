@@ -101,8 +101,8 @@ class ABTesting {
     });
 
     // Track with analytics
-    if (typeof window !== 'undefined' && (window as { gtag?: Function }).gtag) {
-      (window as { gtag: Function }).gtag('event', 'ab_test_conversion', {
+    if (typeof window !== 'undefined' && (window as { gtag?: (command: string, targetId: string, config?: Record<string, unknown>) => void }).gtag) {
+      (window as { gtag: (command: string, targetId: string, config?: Record<string, unknown>) => void }).gtag('event', 'ab_test_conversion', {
         test_name: testName,
         variant,
         conversion_type: conversionType,
