@@ -14,6 +14,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RecipeResponse } from '../types';
 import { SvgXml } from 'react-native-svg';
+import { analytics } from '../utils/Analytics';
+import { performanceMonitor } from '../utils/PerformanceMonitor';
 
 type RootStackParamList = {
   Home: undefined;
@@ -78,6 +80,13 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
 
   // Start animations on mount
   useEffect(() => {
+    // Track screen view
+    analytics.trackScreenView('RecipeResult');
+    
+    // Track screen transition performance
+    const trackTransition = performanceMonitor.trackScreenTransition('RecipeResult');
+    trackTransition();
+    
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -115,13 +124,23 @@ export default function RecipeResultScreen({ navigation, route }: Props) {
 
   const shareRecipe = async () => {
     animateButtonPress();
+    analytics.trackUserInteraction('share_recipe', 'Recipe Sharing');
+    
     try {
       await Share.share({
         message: `Check out this adapted recipe!\n\n${result.adapted_recipe}`,
         title: 'Adapted Recipe from AdaptiveEats',
       });
+      analytics.track('recipe_shared', {
+        method: 'native_share',
+        success: true,
+      });
     } catch (error) {
-      // Error sharing recipe - silently fail
+      analytics.track('recipe_shared', {
+        method: 'native_share',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   };
 

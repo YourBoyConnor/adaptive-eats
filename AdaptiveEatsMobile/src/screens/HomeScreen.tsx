@@ -19,6 +19,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RecipeResponse, DietaryOption, Allergy } from '../types';
 import { API_BASE_URL } from '../utils/config';
 import { SvgXml } from 'react-native-svg';
+import { performanceMonitor } from '../utils/PerformanceMonitor';
+import { analytics } from '../utils/Analytics';
+import { errorMonitoring } from '../utils/ErrorMonitoring';
+import { OptimizedImage } from '../components/OptimizedImage';
 
 type RootStackParamList = {
   Home: undefined;
@@ -181,10 +185,20 @@ export default function HomeScreen({ navigation }: Props) {
 
   // Start animations on mount
   useEffect(() => {
+    // Track screen view
+    analytics.trackScreenView('Home');
+    
+    // Track app performance
+    const { trackReady, trackFirstRender } = performanceMonitor.trackAppStart();
+    trackFirstRender();
+    
     animateIn();
     if (isLoading) {
       animatePulse();
     }
+    
+    // Track memory usage
+    performanceMonitor.trackMemoryUsage();
   }, [isLoading]);
 
   // Animate image when it appears
@@ -220,10 +234,14 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   const pickImage = async () => {
+    const startTime = Date.now();
+    analytics.trackUserInteraction('pick_image', 'Image Selection');
+    
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to upload images!');
+        analytics.trackImageOperation('pick', false, Date.now() - startTime, 'Permission denied');
         return;
       }
 
@@ -236,17 +254,27 @@ export default function HomeScreen({ navigation }: Props) {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setImageUri(result.assets[0].uri);
+        analytics.trackImageOperation('pick', true, Date.now() - startTime);
+      } else {
+        analytics.trackImageOperation('pick', false, Date.now() - startTime, 'User canceled');
       }
     } catch (error) {
       Alert.alert('Gallery Error', 'Unable to access photo library. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      analytics.trackImageOperation('pick', false, Date.now() - startTime, errorMessage);
+      errorMonitoring.captureImageError('gallery_pick', error instanceof Error ? error : new Error(errorMessage));
     }
   };
 
   const takePhoto = async () => {
+    const startTime = Date.now();
+    analytics.trackUserInteraction('take_photo', 'Image Selection');
+    
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Sorry, we need camera permissions to take photos!');
+        analytics.trackImageOperation('capture', false, Date.now() - startTime, 'Permission denied');
         return;
       }
 
@@ -258,9 +286,15 @@ export default function HomeScreen({ navigation }: Props) {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setImageUri(result.assets[0].uri);
+        analytics.trackImageOperation('capture', true, Date.now() - startTime);
+      } else {
+        analytics.trackImageOperation('capture', false, Date.now() - startTime, 'User canceled');
       }
     } catch (error) {
       Alert.alert('Camera Error', 'Unable to access camera. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      analytics.trackImageOperation('capture', false, Date.now() - startTime, errorMessage);
+      errorMonitoring.captureImageError('camera_capture', error instanceof Error ? error : new Error(errorMessage));
     }
   };
 
@@ -293,6 +327,8 @@ export default function HomeScreen({ navigation }: Props) {
 
   const submitRecipe = async (restrictions: string[]) => {
     setIsLoading(true);
+    const startTime = Date.now();
+    const trackAPICall = performanceMonitor.trackAPICall('adapt-recipe');
 
     try {
       console.log('API_BASE_URL:', API_BASE_URL);
@@ -369,9 +405,39 @@ export default function HomeScreen({ navigation }: Props) {
         nutrition: data.nutrition_facts
       });
       
+      // Track successful recipe adaptation
+      const duration = Date.now() - startTime;
+      analytics.trackRecipeAdaptation({
+        method: imageUri ? 'image' : 'text',
+        dietaryRestrictions: restrictions,
+        allergies: allergies.map(a => a.name),
+        hasImage: !!imageUri,
+        success: true,
+        duration,
+      });
+      
+      trackAPICall(true);
       navigation.navigate('RecipeResult', { result: data });
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'An error occurred');
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      Alert.alert('Error', errorMessage);
+      
+      // Track failed recipe adaptation
+      const duration = Date.now() - startTime;
+      analytics.trackRecipeAdaptation({
+        method: imageUri ? 'image' : 'text',
+        dietaryRestrictions: restrictions,
+        allergies: allergies.map(a => a.name),
+        hasImage: !!imageUri,
+        success: false,
+        error: errorMessage,
+        duration,
+      });
+      
+      // Capture API error
+      errorMonitoring.captureAPIError('adapt-recipe', error instanceof Error ? error : new Error(errorMessage), duration);
+      
+      trackAPICall(false, errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -452,7 +518,12 @@ export default function HomeScreen({ navigation }: Props) {
                     }
                   ]}
                 >
-                  <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                  <OptimizedImage 
+                    source={{ uri: imageUri }} 
+                    style={styles.previewImage}
+                    onLoad={() => analytics.trackImageOperation('load', true)}
+                    onError={() => analytics.trackImageOperation('load', false, undefined, 'Load failed')}
+                  />
                   <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => setImageUri(null)}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   SparklesIcon, 
@@ -10,10 +10,16 @@ import {
   XMarkIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
-import { RecipeCard } from '@/components/RecipeCard';
-import { DietarySelector } from '@/components/DietarySelector';
-import { AllergyInput } from '@/components/AllergyInput';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { trackRecipeAdaptation } from '@/components/Analytics';
+import { PerformanceDashboard } from '@/components/PerformanceDashboard';
+import { abTesting, initializeABTests } from '@/utils/ABTesting';
+import Image from 'next/image';
+
+// Lazy load heavy components
+const RecipeCard = lazy(() => import('@/components/RecipeCard').then(mod => ({ default: mod.RecipeCard })));
+const DietarySelector = lazy(() => import('@/components/DietarySelector').then(mod => ({ default: mod.DietarySelector })));
+const AllergyInput = lazy(() => import('@/components/AllergyInput').then(mod => ({ default: mod.AllergyInput })));
 
 interface RecipeResponse {
   original_recipe: string;
@@ -34,11 +40,23 @@ export default function Home() {
   const [result, setResult] = useState<RecipeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [abTestConfig, setAbTestConfig] = useState<any>(null);
 
   const dietaryOptions = [
     'vegan', 'vegetarian', 'gluten-free', 'keto', 'paleo', 
     'dairy-free', 'nut-free', 'low-sodium', 'diabetic-friendly'
   ];
+
+  // Initialize A/B tests
+  useEffect(() => {
+    initializeABTests();
+    
+    // Get A/B test configuration
+    const ctaTest = abTesting.getVariant('cta_button');
+    if (ctaTest) {
+      setAbTestConfig(ctaTest.config);
+    }
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -210,8 +228,33 @@ export default function Home() {
 
       const data = await response.json();
       setResult(data);
+      
+      // Track successful recipe adaptation
+      trackRecipeAdaptation({
+        method: imageFile ? 'image' : 'text',
+        dietaryRestrictions,
+        allergies,
+        hasImage: !!imageFile,
+        success: true,
+      });
+
+      // Track A/B test conversion
+      if (abTestConfig) {
+        abTesting.trackConversion('cta_button', abTestConfig.variant || 'control', 'recipe_adaptation_success');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      
+      // Track failed recipe adaptation
+      trackRecipeAdaptation({
+        method: imageFile ? 'image' : 'text',
+        dietaryRestrictions,
+        allergies,
+        hasImage: !!imageFile,
+        success: false,
+        error: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -229,7 +272,7 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
-                <img src="/logo.svg" alt="AdaptiveEats Logo" className="w-8 h-8" />
+                <Image src="/logo.svg" alt="AdaptiveEats Logo" width={32} height={32} priority />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-white">AdaptiveEats</h1>
@@ -277,10 +320,13 @@ export default function Home() {
               {/* Image Preview */}
               {imagePreview && (
                 <div className="relative">
-                  <img 
+                  <Image 
                     src={imagePreview} 
                     alt="Preview" 
+                    width={400}
+                    height={256}
                     className="w-full h-64 object-cover rounded-xl border border-white/20"
+                    unoptimized
                   />
                   <button
                     type="button"
@@ -338,17 +384,21 @@ export default function Home() {
             </div>
 
             {/* Dietary Restrictions */}
-            <DietarySelector
-              options={dietaryOptions}
-              selected={dietaryRestrictions}
-              onChange={setDietaryRestrictions}
-            />
+            <Suspense fallback={<div className="h-32 bg-white/10 rounded-xl animate-pulse" />}>
+              <DietarySelector
+                options={dietaryOptions}
+                selected={dietaryRestrictions}
+                onChange={setDietaryRestrictions}
+              />
+            </Suspense>
 
             {/* Allergies */}
-            <AllergyInput
-              allergies={allergies}
-              onChange={setAllergies}
-            />
+            <Suspense fallback={<div className="h-24 bg-white/10 rounded-xl animate-pulse" />}>
+              <AllergyInput
+                allergies={allergies}
+                onChange={setAllergies}
+              />
+            </Suspense>
 
             {/* Submit Button */}
             <motion.button
@@ -356,14 +406,24 @@ export default function Home() {
               disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white font-semibold py-4 px-6 rounded-xl hover:from-orange-600 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg"
+              data-track="adapt_recipe"
+              data-category="Recipe"
+              className={`w-full ${
+                abTestConfig?.style === 'solid' 
+                  ? 'bg-orange-600 hover:bg-orange-700' 
+                  : abTestConfig?.style === 'outline'
+                  ? 'bg-transparent border-2 border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white'
+                  : 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700'
+              } text-white font-semibold ${
+                abTestConfig?.size === 'medium' ? 'py-3 px-4' : 'py-4 px-6'
+              } rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg`}
             >
               {isLoading ? (
                 <LoadingSpinner />
               ) : (
                 <>
-                  <img src="/logo.svg" alt="Adapt" className="w-5 h-5" />
-                  <span>Adapt Recipe</span>
+                  <Image src="/logo.svg" alt="Adapt" width={20} height={20} />
+                  <span>{abTestConfig?.text || 'Adapt Recipe'}</span>
                 </>
               )}
             </motion.button>
@@ -395,7 +455,9 @@ export default function Home() {
                 exit={{ opacity: 0, y: -20 }}
                 className="mt-8"
               >
-                <RecipeCard result={result} />
+                <Suspense fallback={<div className="h-64 bg-white/10 rounded-xl animate-pulse" />}>
+                  <RecipeCard result={result} />
+                </Suspense>
               </motion.div>
             )}
           </AnimatePresence>
@@ -424,6 +486,9 @@ export default function Home() {
           </a>
         </p>
       </motion.footer>
+      
+      {/* Performance Dashboard */}
+      <PerformanceDashboard />
     </div>
   );
 }
