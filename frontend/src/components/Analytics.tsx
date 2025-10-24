@@ -111,7 +111,6 @@ export function AnalyticsProvider() {
       window.removeEventListener('popstate', handleRouteChange);
       document.removeEventListener('click', trackUserInteraction);
       document.removeEventListener('submit', trackUserInteraction);
-      window.removeEventListener('error', trackError);
     };
   }, []);
 
